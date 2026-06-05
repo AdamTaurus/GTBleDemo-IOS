@@ -12,7 +12,7 @@ struct ContentView: View {
                     ActionSection(viewModel: viewModel)
                     DeviceListSection(viewModel: viewModel)
                     DeviceInfoSection(info: viewModel.deviceInfo)
-                    FeatureEntrySection()
+                    FeatureEntrySection(isConnected: viewModel.isConnected)
                     LogSection(logs: viewModel.logs)
                 }
                 .padding(16)
@@ -154,120 +154,94 @@ private struct DeviceInfoSection: View {
 }
 
 private struct FeatureEntrySection: View {
+    let isConnected: Bool
+
     var body: some View {
         DemoCard(title: "功能入口") {
             VStack(alignment: .leading, spacing: 8) {
-                Text("后续会按独立页面补充方向键、文件传输、自定义消息和 Wi-Fi 图片能力。")
+                Text("连接设备后可进入独立功能页面。iOS Demo 使用 SwiftUI 页面承载功能示例。")
                     .font(.footnote)
                     .foregroundColor(.secondary)
 
                 VStack(spacing: 8) {
-                    DisabledFeatureRow(title: "方向键控制")
-                    DisabledFeatureRow(title: "文件传输")
-                    DisabledFeatureRow(title: "自定义消息")
-                    DisabledFeatureRow(title: "Wi-Fi 图片")
+                    NavigationLink(destination: RemoteKeyView()) {
+                        FeatureRow(
+                            title: "方向键控制",
+                            subtitle: "发送上、下、左、右、确认、返回、主页、刷新按键",
+                            systemImage: "arrow.up.and.down.and.arrow.left.and.right",
+                            trailingText: isConnected ? "打开" : "需连接",
+                            isEnabled: isConnected
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(!isConnected)
+
+                    NavigationLink(destination: FileTransferView()) {
+                        FeatureRow(
+                            title: "文件传输",
+                            subtitle: "查询、下载和上传提词器 txt 文件",
+                            systemImage: "doc.text",
+                            trailingText: isConnected ? "打开" : "需连接",
+                            isEnabled: isConnected
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(!isConnected)
+
+                    FeatureRow(
+                        title: "自定义消息",
+                        subtitle: "后续补充发送 Payload.data 示例",
+                        systemImage: "text.bubble",
+                        trailingText: "后续",
+                        isEnabled: false
+                    )
+
+                    FeatureRow(
+                        title: "Wi-Fi 图片",
+                        subtitle: "后续补充 Wi-Fi 图片列表和预览",
+                        systemImage: "photo.on.rectangle",
+                        trailingText: "后续",
+                        isEnabled: false
+                    )
                 }
             }
         }
     }
 }
 
-private struct DisabledFeatureRow: View {
+private struct FeatureRow: View {
     let title: String
+    let subtitle: String
+    let systemImage: String
+    let trailingText: String
+    let isEnabled: Bool
 
     var body: some View {
-        HStack {
-            Text(title)
-                .font(.subheadline)
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundColor(isEnabled ? .blue : .secondary)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+
             Spacer()
-            Text("后续")
+
+            Text(trailingText)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .padding(10)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(8)
-    }
-}
-
-private struct LogSection: View {
-    let logs: [String]
-
-    var body: some View {
-        DemoCard(title: "日志") {
-            if logs.isEmpty {
-                Text("暂无日志。")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(logs.enumerated()), id: \.offset) { _, log in
-                        Text(log)
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct DemoCard<Content: View>: View {
-    let title: String
-    let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .padding(14)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
-    }
-}
-
-private struct StatusRow: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        HStack(alignment: .top) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .frame(width: 88, alignment: .leading)
-            Text(value)
-                .font(.subheadline)
-                .foregroundColor(.primary)
-            Spacer(minLength: 0)
-        }
-    }
-}
-
-private struct DemoButton: View {
-    let title: String
-    let systemImage: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: systemImage)
-                Text(title)
-                    .fontWeight(.medium)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.blue.opacity(0.12))
-            .cornerRadius(8)
-        }
+        .opacity(isEnabled ? 1 : 0.58)
     }
 }

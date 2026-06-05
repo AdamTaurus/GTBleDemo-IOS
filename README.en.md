@@ -2,9 +2,9 @@
 
 [中文](README.md)
 
-This is a minimal iOS demo for third-party developers. It shows how to integrate `GD BLE SDK` through a local `GDBleSDK.xcframework`, then scan BLE devices, connect to a discovered device, and request device information.
+This is a minimal iOS demo for third-party developers. It shows how to integrate `GD BLE SDK` through a local `GDBleSDK.xcframework`, then scan BLE devices, connect to a discovered device, request device information, send remote key events, and transfer teleprompter files.
 
-The demo is built with SwiftUI. The first version only covers the basic BLE flow. Remote keys, file transfer, custom messages, and Wi-Fi images will be added later as separate screens.
+The demo is built with SwiftUI. The main screen handles device connection and device info. Other protocol features are split into separate screens so customers can copy only what they need.
 
 ## Project Structure
 
@@ -16,6 +16,11 @@ GDBleDemo-iOS/
 │   ├── GDBleDemo_iOSApp.swift    # SwiftUI app entry
 │   ├── ContentView.swift         # Scan, connect, device info, and feature entries
 │   ├── BleDemoViewModel.swift    # SDK listener, state, and basic API flow
+│   ├── RemoteKeyView.swift       # Remote key control screen
+│   ├── RemoteKeyViewModel.swift
+│   ├── FileTransferView.swift    # Teleprompter file transfer screen
+│   ├── FileTransferViewModel.swift
+│   ├── DemoComponents.swift      # Shared SwiftUI demo components
 │   └── Assets.xcassets
 ├── GDBleDemo-iOS.xcodeproj
 ├── README.md
@@ -71,6 +76,10 @@ The SDK does not show business dialogs or wrap permission UI. iOS displays the B
 - Connection state display
 - Discovered device list
 - Device info request: `GDBleClient.shared.getDeviceInfo()`
+- Remote key events: `GDBleClient.shared.sendKey(...)`
+- Teleprompter file list query: `GDBleClient.shared.viewFile(pkg:)`
+- Teleprompter file download: `GDBleClient.shared.downloadFile(pkg:fileId:)`
+- Teleprompter txt file upload: `GDBleClient.shared.sendFile(fileURL:pkg:)`
 - Raw protocol JSON logs
 - SDK error callback logs
 
@@ -138,6 +147,24 @@ Request device information after connection:
 GDBleClient.shared.getDeviceInfo()
 ```
 
+Send remote key events:
+
+```swift
+GDBleClient.shared.sendKey(.up)
+GDBleClient.shared.sendKey(.center)
+GDBleClient.shared.sendKey(.back)
+```
+
+Teleprompter file transfer uses a fixed test package name:
+
+```swift
+let pkg = "com.goolton.teleprompter"
+
+GDBleClient.shared.viewFile(pkg: pkg)
+GDBleClient.shared.downloadFile(pkg: pkg, fileId: file.id)
+GDBleClient.shared.sendFile(fileURL: fileURL, pkg: pkg)
+```
+
 Remove the listener when the page is destroyed:
 
 ```swift
@@ -146,3 +173,16 @@ GDBleClient.shared.removeListener(observer)
 
 The SDK keeps listeners weakly. The host app must retain the listener instance by itself. This demo stores `BleDemoViewModel` with `@StateObject`, and the ViewModel registers itself as the SDK listener.
 
+## Feature Screens
+
+### Remote Keys
+
+`RemoteKeyView` demonstrates sending key events after the glasses are connected. It includes buttons for `up/down/left/right/center/back/home/refresh`; buttons are disabled when the device is disconnected. In a customer app, call `GDBleClient.shared.sendKey(...)` from the app's own button handler.
+
+### Teleprompter File Transfer
+
+`FileTransferView` demonstrates teleprompter file APIs with the test package `com.goolton.teleprompter`:
+
+- Tap Query File List to call `viewFile(pkg:)`; read `message.data?.fileList` when `Action.VIEW_FILE` is received.
+- Tap Download on a file row to call `downloadFile(pkg:fileId:)`; the completed local path is returned through `onFileReceived(absolutePath:)`.
+- Tap Upload Test File to create a random UTF-8 txt file named `测试 + timestamp` in the app cache, then call `sendFile(fileURL:pkg:)`.

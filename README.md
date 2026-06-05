@@ -2,9 +2,9 @@
 
 [English](README.en.md)
 
-这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接和设备信息读取。
+这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接、设备信息读取、方向键控制和提词器文件传输。
 
-Demo 使用 SwiftUI 实现，当前首版只包含基础 BLE 流程；方向键、文件传输、自定义消息和 Wi-Fi 图片会在后续独立页面中补充。
+Demo 使用 SwiftUI 实现。首页负责设备连接和设备信息展示，其它协议能力按独立页面拆分，便于客户按需复制。
 
 ## 项目结构
 
@@ -16,6 +16,11 @@ GDBleDemo-iOS/
 │   ├── GDBleDemo_iOSApp.swift    # SwiftUI App 入口
 │   ├── ContentView.swift         # 扫描、连接、设备信息和功能入口
 │   ├── BleDemoViewModel.swift    # SDK listener、状态和基础调用流程
+│   ├── RemoteKeyView.swift       # 方向键控制页面
+│   ├── RemoteKeyViewModel.swift
+│   ├── FileTransferView.swift    # 提词器文件传输页面
+│   ├── FileTransferViewModel.swift
+│   ├── DemoComponents.swift      # Demo 公共 SwiftUI 组件
 │   └── Assets.xcassets
 ├── GDBleDemo-iOS.xcodeproj
 ├── README.md
@@ -71,6 +76,10 @@ SDK 不会主动展示业务弹窗，也不封装权限 UI。iOS 的蓝牙授权
 - 连接状态展示
 - 扫描设备列表展示
 - 设备信息请求：`GDBleClient.shared.getDeviceInfo()`
+- 方向键发送：`GDBleClient.shared.sendKey(...)`
+- 提词器文件列表查询：`GDBleClient.shared.viewFile(pkg:)`
+- 提词器文件下载：`GDBleClient.shared.downloadFile(pkg:fileId:)`
+- 提词器 txt 文件上传：`GDBleClient.shared.sendFile(fileURL:pkg:)`
 - 原始协议 JSON 日志展示
 - SDK 错误回调日志展示
 
@@ -138,6 +147,24 @@ GDBleClient.shared.connect(device: device)
 GDBleClient.shared.getDeviceInfo()
 ```
 
+发送方向键：
+
+```swift
+GDBleClient.shared.sendKey(.up)
+GDBleClient.shared.sendKey(.center)
+GDBleClient.shared.sendKey(.back)
+```
+
+提词器文件传输使用固定测试包名：
+
+```swift
+let pkg = "com.goolton.teleprompter"
+
+GDBleClient.shared.viewFile(pkg: pkg)
+GDBleClient.shared.downloadFile(pkg: pkg, fileId: file.id)
+GDBleClient.shared.sendFile(fileURL: fileURL, pkg: pkg)
+```
+
 页面销毁时移除监听：
 
 ```swift
@@ -146,3 +173,16 @@ GDBleClient.shared.removeListener(observer)
 
 Listener 会被 SDK 弱引用保存，宿主 App 需要自己持有 listener 实例。Demo 中使用 `@StateObject` 持有 `BleDemoViewModel`，并由 ViewModel 注册 SDK listener。
 
+## 功能页面
+
+### 方向键控制
+
+`RemoteKeyView` 演示连接后发送按键事件。页面提供 `up/down/left/right/center/back/home/refresh` 全量按钮；未连接时按钮禁用。客户项目只需要在自己的按钮事件中调用 `GDBleClient.shared.sendKey(...)`。
+
+### 提词器文件传输
+
+`FileTransferView` 演示提词器文件能力，测试包名为 `com.goolton.teleprompter`：
+
+- 点击“查询文件列表”调用 `viewFile(pkg:)`，收到 `Action.VIEW_FILE` 后读取 `message.data?.fileList`。
+- 文件列表项点击“下载”调用 `downloadFile(pkg:fileId:)`，下载完成路径通过 `onFileReceived(absolutePath:)` 返回。
+- 点击“上传测试文件”会在 App cache 下随机创建 `测试 + 时间戳` 的 UTF-8 txt 文件，并调用 `sendFile(fileURL:pkg:)` 上传。
