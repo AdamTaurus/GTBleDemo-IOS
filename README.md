@@ -1,0 +1,148 @@
+# GD BLE iOS Demo
+
+[English](README.en.md)
+
+这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接和设备信息读取。
+
+Demo 使用 SwiftUI 实现，当前首版只包含基础 BLE 流程；方向键、文件传输、自定义消息和 Wi-Fi 图片会在后续独立页面中补充。
+
+## 项目结构
+
+```text
+GDBleDemo-iOS/
+├── Frameworks/
+│   └── GDBleSDK.xcframework      # GD BLE SDK 二进制产物
+├── GDBleDemo-iOS/
+│   ├── GDBleDemo_iOSApp.swift    # SwiftUI App 入口
+│   ├── ContentView.swift         # 扫描、连接、设备信息和功能入口
+│   ├── BleDemoViewModel.swift    # SDK listener、状态和基础调用流程
+│   └── Assets.xcassets
+├── GDBleDemo-iOS.xcodeproj
+├── README.md
+└── README.en.md
+```
+
+## 环境要求
+
+- Xcode：建议使用当前项目创建时的 Xcode 版本或更新版本
+- iOS Deployment Target：14.0
+- 真机需要支持 BLE
+- SDK module：`GDBleSDK`
+- SDK facade：`GDBleClient.shared`
+
+## SDK 接入方式
+
+当前 Demo 直接依赖本地 `xcframework`：
+
+```text
+Frameworks/GDBleSDK.xcframework
+```
+
+在 Xcode 工程中需要将该 framework 加入：
+
+- Link Binary With Libraries
+- Embed Frameworks
+- Embed 方式：Code Sign On Copy
+
+Swift 代码中导入 SDK：
+
+```swift
+import GDBleSDK
+```
+
+## 权限说明
+
+客户 App 必须在自己的 `Info.plist` 中添加蓝牙用途说明。当前 Demo 使用 generated Info.plist，并已在 build settings 中配置：
+
+```xml
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>用于连接 GD BLE 设备并进行数据通信。</string>
+```
+
+SDK 不会主动展示业务弹窗，也不封装权限 UI。iOS 的蓝牙授权弹窗由系统在 CoreBluetooth 使用时触发。
+
+## 已实现功能
+
+- SDK 初始化和监听注册：`GDBleClient.shared.addListener(...)`
+- BLE 扫描：`GDBleClient.shared.startScan(timeoutMs:)`
+- 停止扫描：`GDBleClient.shared.stopScan()`
+- 连接扫描到的设备：`GDBleClient.shared.connect(device:)`
+- 主动断开：`GDBleClient.shared.disconnect()`
+- 连接状态展示
+- 扫描设备列表展示
+- 设备信息请求：`GDBleClient.shared.getDeviceInfo()`
+- 原始协议 JSON 日志展示
+- SDK 错误回调日志展示
+
+注意：iOS 无法读取 BLE MAC，`GDBleDevice.address` 使用系统提供的 peripheral UUID 字符串。
+
+## 运行方式
+
+1. 用 Xcode 打开 `GDBleDemo-iOS.xcodeproj`。
+2. 选择 `GDBleDemo-iOS` scheme。
+3. 选择 iPhone 真机运行。BLE 扫描和连接需要真机，模拟器只能用于编译检查。
+4. 如果 Xcode 提示签名问题，在 target 的 Signing & Capabilities 中选择你的 Team。
+
+也可以先执行编译检查：
+
+```bash
+xcodebuild -project GDBleDemo-iOS.xcodeproj -scheme GDBleDemo-iOS -configuration Debug -sdk iphonesimulator build
+```
+
+## 基础调用流程
+
+注册 SDK listener：
+
+```swift
+final class BleObserver: GDBleListener {
+    func onDeviceFound(device: GDBleDevice) {
+        print(device.name ?? "-", device.address, device.rssi)
+    }
+
+    func onConnectionStateChanged(connected: Bool) {
+        print("connected:", connected)
+    }
+
+    func onMessageReceived(message: BleMsg) {
+        print("message:", message.action.rawValue)
+    }
+
+    func onRawMessageReceived(json: String) {
+        print("raw:", json)
+    }
+
+    func onError(error: GDBleError) {
+        print("error:", error)
+    }
+}
+
+let observer = BleObserver()
+GDBleClient.shared.addListener(observer)
+```
+
+开始扫描：
+
+```swift
+GDBleClient.shared.startScan(timeoutMs: 12_000)
+```
+
+连接扫描到的设备：
+
+```swift
+GDBleClient.shared.connect(device: device)
+```
+
+连接后读取设备信息：
+
+```swift
+GDBleClient.shared.getDeviceInfo()
+```
+
+页面销毁时移除监听：
+
+```swift
+GDBleClient.shared.removeListener(observer)
+```
+
+Listener 会被 SDK 弱引用保存，宿主 App 需要自己持有 listener 实例。Demo 中使用 `@StateObject` 持有 `BleDemoViewModel`，并由 ViewModel 注册 SDK listener。
+

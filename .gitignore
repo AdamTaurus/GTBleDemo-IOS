@@ -1,0 +1,13 @@
+# Xcode user state
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+
+# Local build outputs
+DerivedData/
+build/
+Build/
+
+# macOS noise
+.DS_Store
+

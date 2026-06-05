@@ -1,0 +1,249 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3 effective-5.10 (swiftlang-6.3.0.123.5 clang-2100.0.123.102)
+// swift-module-flags: -target x86_64-apple-ios12.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name GDBleSDK
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3
+import CoreBluetooth
+import Foundation
+import Swift
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+public struct GsonHolder {
+  public struct Gson {
+    public init()
+    public func toJson<T>(_ value: T) -> Swift.String where T : Swift.Encodable
+    public func fromJson<T>(_ type: T.Type, _ json: Swift.String) -> T? where T : Swift.Decodable
+  }
+  public static let gson: GDBleSDK.GsonHolder.Gson
+}
+public struct BleMsg : Swift.Codable {
+  public let action: GDBleSDK.Action
+  public let pkg: Swift.String?
+  public let data: GDBleSDK.Payload?
+  public let cmd: GDBleSDK.CMD
+  public init(action: GDBleSDK.Action, pkg: Swift.String? = nil, data: GDBleSDK.Payload? = nil, cmd: GDBleSDK.CMD = .ACK)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum Action : Swift.String, Swift.Codable, Swift.CaseIterable {
+  case KEY_EVENT
+  case OPEN_APP
+  case TEXT_INPUT
+  case APP_DATA
+  case LOAD_APP_DATA
+  case ADD_FILE
+  case DELETE_FILE
+  case DELETE_MEDIA
+  case DOWNLOAD_FILE
+  case VIEW_FILE
+  case RENAME_FILE
+  case VIEW_MEDIA
+  case WIFI_SERVICE_START
+  case WIFI_SERVICE_STOP
+  case NET_CONNECT_CONGFIG
+  case CMD
+  case DEVICE_INFO
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init?(rawValue: Swift.String)
+  public typealias AllCases = [GDBleSDK.Action]
+  public typealias RawValue = Swift.String
+  nonisolated public static var allCases: [GDBleSDK.Action] {
+    get
+  }
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum CMD : Swift.String, Swift.Codable, Swift.CaseIterable {
+  case ACK
+  case RELOAD
+  case ERROR
+  case FILE_END
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init?(rawValue: Swift.String)
+  public typealias AllCases = [GDBleSDK.CMD]
+  public typealias RawValue = Swift.String
+  nonisolated public static var allCases: [GDBleSDK.CMD] {
+    get
+  }
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct Payload : Swift.Codable {
+  public let data: Swift.String?
+  public let keyCode: Swift.Int?
+  public let text: Swift.String?
+  public let config: GDBleSDK.StyleConfig?
+  public let navigationData: [Swift.String : GDBleSDK.AnyCodable]?
+  public let file: GDBleSDK.BleFile?
+  public let fileList: [GDBleSDK.BleFile]?
+  public init(data: Swift.String? = nil, keyCode: Swift.Int? = nil, text: Swift.String? = nil, config: GDBleSDK.StyleConfig? = nil, navigationData: [Swift.String : GDBleSDK.AnyCodable]? = nil, file: GDBleSDK.BleFile? = nil, fileList: [GDBleSDK.BleFile]? = nil)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct BleFile : Swift.Codable {
+  public let name: Swift.String
+  public let size: Swift.Int
+  public let id: Swift.Int
+  public let time: Swift.Int64
+  public let type: Swift.String?
+  public let size64: Swift.Int64?
+  public let topFileId: Swift.Int?
+  public let duration: Swift.Int?
+  public init(name: Swift.String, size: Swift.Int, id: Swift.Int, time: Swift.Int64, type: Swift.String = "image", size64: Swift.Int64? = nil, topFileId: Swift.Int = -1, duration: Swift.Int? = nil)
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+public struct MediaRequest : Swift.Codable {
+  public let mediaType: Swift.String
+  public let page: Swift.Int
+  public let pageSize: Swift.Int
+  public init(mediaType: Swift.String = MEDIA_TYPE_PHOTO, page: Swift.Int, pageSize: Swift.Int = 100)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct NetConfig : Swift.Codable {
+  public let ip: Swift.String
+  public let port: Swift.Int
+  public let token: Swift.String
+  public let exp: Swift.Int64
+  public init(ip: Swift.String, port: Swift.Int, token: Swift.String, exp: Swift.Int64)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct StyleConfig : Swift.Codable {
+  public let fontSize: Swift.Int
+  public let fontColor: Swift.String
+  public let speed: Swift.Int
+  public let hideText: Swift.Int
+  public let following: Swift.Bool
+  public var topFileId: Swift.Int?
+  public var watermarkStyle: Swift.Int?
+  public var recordTime: Swift.Int?
+  public var cameraRatio: Swift.String?
+  public init(fontSize: Swift.Int, fontColor: Swift.String, speed: Swift.Int, hideText: Swift.Int, following: Swift.Bool, topFileId: Swift.Int? = -1, watermarkStyle: Swift.Int? = 0, recordTime: Swift.Int? = 0, cameraRatio: Swift.String? = "4_3")
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct Translate : Swift.Codable {
+  public var original: Swift.String
+  public var translation: Swift.String
+  public init(original: Swift.String, translation: Swift.String)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct NetConnectConfig : Swift.Codable {
+  public let ssid: Swift.String
+  public let pws: Swift.String
+  public init(ssid: Swift.String, pws: Swift.String)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct AnyCodable : Swift.Codable {
+  public let value: Any
+  public init(_ value: Any)
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+public let MEDIA_TYPE_PHOTO: Swift.String
+public let MEDIA_TYPE_VIDEO: Swift.String
+public let CMD_ACK: GDBleSDK.BleMsg
+public let CMD_RELOAD: GDBleSDK.BleMsg
+public let CMD_ERROR: GDBleSDK.BleMsg
+@_hasMissingDesignatedInitializers final public class GDBleClient {
+  public static let shared: GDBleSDK.GDBleClient
+  final public func addListener(_ listener: any GDBleSDK.GDBleListener)
+  final public func removeListener(_ listener: any GDBleSDK.GDBleListener)
+  final public func startScan(timeoutMs: Swift.Int64 = 12_000)
+  final public func stopScan()
+  final public func connect(device: GDBleSDK.GDBleDevice)
+  final public func disconnect()
+  final public func isBluetoothEnabled() -> Swift.Bool
+  final public func isScanning() -> Swift.Bool
+  final public func isConnecting() -> Swift.Bool
+  final public func isConnected() -> Swift.Bool
+  final public func sendKey(_ key: GDBleSDK.GDBleKey)
+  final public func sendMessage(_ message: GDBleSDK.BleMsg)
+  final public func sendRawJson(_ json: Swift.String)
+  final public func getDeviceInfo(pkg: Swift.String? = nil)
+  final public func getAppConfig(pkg: Swift.String)
+  final public func openApp(pkg: Swift.String)
+  final public func viewFile(pkg: Swift.String)
+  final public func downloadFile(pkg: Swift.String, fileId: Swift.Int)
+  final public func renameFile(pkg: Swift.String, fileId: Swift.Int, newName: Swift.String)
+  final public func deleteFile(pkg: Swift.String, fileId: Swift.Int)
+  final public func viewMedia(type: Swift.String = MEDIA_TYPE_PHOTO, page: Swift.Int = 1, pageSize: Swift.Int = 100)
+  final public func startWifiService()
+  final public func stopWifiService()
+  final public func sendFile(fileURL: Foundation.URL, pkg: Swift.String)
+  final public func clearCache()
+  final public func toJson(_ message: GDBleSDK.BleMsg) -> Swift.String
+  @objc deinit
+}
+public struct GDBleDevice : Swift.Equatable {
+  public let name: Swift.String?
+  public let address: Swift.String
+  public let rssi: Swift.Int
+  public init(name: Swift.String?, address: Swift.String, rssi: Swift.Int)
+  public static func == (a: GDBleSDK.GDBleDevice, b: GDBleSDK.GDBleDevice) -> Swift.Bool
+}
+public enum GDBleKey {
+  case up
+  case down
+  case left
+  case right
+  case center
+  case back
+  case home
+  case refresh
+  public static func == (a: GDBleSDK.GDBleKey, b: GDBleSDK.GDBleKey) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public enum GDBleError : Swift.Error, Swift.Equatable, Swift.CustomStringConvertible {
+  case bluetoothUnavailable(Swift.String)
+  case deviceNotFound(Swift.String)
+  case notConnected
+  case serviceUnavailable(Swift.String)
+  case sendFailed(Swift.String)
+  case fileNotFound(Swift.String)
+  case fileSaveFailed(Swift.String)
+  case jsonDecodeFailed(Swift.String)
+  case connectionFailed(Swift.String)
+  case unknown(Swift.String)
+  public var description: Swift.String {
+    get
+  }
+  public static func == (a: GDBleSDK.GDBleError, b: GDBleSDK.GDBleError) -> Swift.Bool
+}
+public protocol GDBleListener : AnyObject {
+  func onScanStateChanged(scanning: Swift.Bool)
+  func onDeviceFound(device: GDBleSDK.GDBleDevice)
+  func onConnectionStateChanged(connected: Swift.Bool)
+  func onMessageReceived(message: GDBleSDK.BleMsg)
+  func onRawMessageReceived(json: Swift.String)
+  func onFileReceived(absolutePath: Swift.String)
+  func onError(error: GDBleSDK.GDBleError)
+}
+extension GDBleSDK.GDBleListener {
+  public func onScanStateChanged(scanning: Swift.Bool)
+  public func onDeviceFound(device: GDBleSDK.GDBleDevice)
+  public func onConnectionStateChanged(connected: Swift.Bool)
+  public func onMessageReceived(message: GDBleSDK.BleMsg)
+  public func onRawMessageReceived(json: Swift.String)
+  public func onFileReceived(absolutePath: Swift.String)
+  public func onError(error: GDBleSDK.GDBleError)
+}
+extension GDBleSDK.Action : Swift.Equatable {}
+extension GDBleSDK.Action : Swift.Hashable {}
+extension GDBleSDK.Action : Swift.RawRepresentable {}
+extension GDBleSDK.CMD : Swift.Equatable {}
+extension GDBleSDK.CMD : Swift.Hashable {}
+extension GDBleSDK.CMD : Swift.RawRepresentable {}
+extension GDBleSDK.GDBleKey : Swift.Equatable {}
+extension GDBleSDK.GDBleKey : Swift.Hashable {}
