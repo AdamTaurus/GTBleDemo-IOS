@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接、设备信息读取、方向键控制和提词器文件传输。
+这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接、设备信息读取、方向键控制、提词器文件传输和 Wi-Fi 图片预览下载。
 
 Demo 使用 SwiftUI 实现。首页负责设备连接和设备信息展示，其它协议能力按独立页面拆分，便于客户按需复制。
 
@@ -20,6 +20,9 @@ GDBleDemo-iOS/
 │   ├── RemoteKeyViewModel.swift
 │   ├── FileTransferView.swift    # 提词器文件传输页面
 │   ├── FileTransferViewModel.swift
+│   ├── WifiImageView.swift       # Wi-Fi 图片预览和下载页面
+│   ├── WifiImageViewModel.swift
+│   ├── RemoteImageView.swift     # iOS 14 兼容远程图片加载组件
 │   ├── DemoComponents.swift      # Demo 公共 SwiftUI 组件
 │   └── Assets.xcassets
 ├── GDBleDemo-iOS.xcodeproj
@@ -66,6 +69,19 @@ import GDBleSDK
 
 SDK 不会主动展示业务弹窗，也不封装权限 UI。iOS 的蓝牙授权弹窗由系统在 CoreBluetooth 使用时触发。
 
+Wi-Fi 图片页面会访问眼镜端局域网 HTTP 服务，因此 Demo 还配置了：
+
+```xml
+<key>NSLocalNetworkUsageDescription</key>
+<string>用于访问眼镜端 Wi-Fi 图片服务并加载缩略图和原图。</string>
+
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
+</dict>
+```
+
 ## 已实现功能
 
 - SDK 初始化和监听注册：`GDBleClient.shared.addListener(...)`
@@ -80,6 +96,9 @@ SDK 不会主动展示业务弹窗，也不封装权限 UI。iOS 的蓝牙授权
 - 提词器文件列表查询：`GDBleClient.shared.viewFile(pkg:)`
 - 提词器文件下载：`GDBleClient.shared.downloadFile(pkg:fileId:)`
 - 提词器 txt 文件上传：`GDBleClient.shared.sendFile(fileURL:pkg:)`
+- 眼镜端 Wi-Fi 图片服务：`GDBleClient.shared.startWifiService()` / `stopWifiService()`
+- 图片列表查询：`GDBleClient.shared.viewMedia(type:page:pageSize:)`
+- 图片缩略图、原图预览和原图下载到 App 沙盒
 - 原始协议 JSON 日志展示
 - SDK 错误回调日志展示
 
@@ -165,6 +184,20 @@ GDBleClient.shared.downloadFile(pkg: pkg, fileId: file.id)
 GDBleClient.shared.sendFile(fileURL: fileURL, pkg: pkg)
 ```
 
+Wi-Fi 图片预览和下载：
+
+```swift
+GDBleClient.shared.startWifiService()
+
+// 收到 Action.WIFI_SERVICE_START 后解析 NetConfig:
+let baseUrl = "http://\(netConfig.ip):\(netConfig.port)"
+
+GDBleClient.shared.viewMedia(type: "image", page: 1, pageSize: 100)
+
+let thumbUrl = "\(baseUrl)/thumb/image/\(file.id)"
+let rawUrl = "\(baseUrl)/raw/image/\(file.id)"
+```
+
 页面销毁时移除监听：
 
 ```swift
@@ -186,3 +219,13 @@ Listener 会被 SDK 弱引用保存，宿主 App 需要自己持有 listener 实
 - 点击“查询文件列表”调用 `viewFile(pkg:)`，收到 `Action.VIEW_FILE` 后读取 `message.data?.fileList`。
 - 文件列表项点击“下载”调用 `downloadFile(pkg:fileId:)`，下载完成路径通过 `onFileReceived(absolutePath:)` 返回。
 - 点击“上传测试文件”会在 App cache 下随机创建 `测试 + 时间戳` 的 UTF-8 txt 文件，并调用 `sendFile(fileURL:pkg:)` 上传。
+
+### Wi-Fi 图片
+
+`WifiImageView` 演示眼镜端 Wi-Fi 图片服务：
+
+- 点击“打开 Wi-Fi service”调用 `startWifiService()`，收到 `Action.WIFI_SERVICE_START` 后解析 `NetConfig`。
+- Demo 使用 `/health` 做短轮询，服务可访问后调用 `viewMedia(type: "image", page: 1, pageSize: 100)`。
+- 图片列表使用 `/thumb/image/{id}` 加载缩略图，点击列表项后使用 `/raw/image/{id}` 加载原图。
+- 点击“下载原图”会把原图保存到 App 沙盒 `Documents/GDImages/`，不写入系统相册，因此不需要相册权限。
+- 退出页面或点击关闭服务会调用 `stopWifiService()`，避免眼镜端服务残留。

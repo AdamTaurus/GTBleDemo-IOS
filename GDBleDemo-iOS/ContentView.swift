@@ -196,13 +196,17 @@ private struct FeatureEntrySection: View {
                         isEnabled: false
                     )
 
-                    FeatureRow(
-                        title: "Wi-Fi 图片",
-                        subtitle: "后续补充 Wi-Fi 图片列表和预览",
-                        systemImage: "photo.on.rectangle",
-                        trailingText: "后续",
-                        isEnabled: false
-                    )
+                    NavigationLink(destination: WifiImageView()) {
+                        FeatureRow(
+                            title: "Wi-Fi 图片",
+                            subtitle: "开启眼镜端 Wi-Fi 服务，查看缩略图、原图并下载",
+                            systemImage: "photo.on.rectangle",
+                            trailingText: isConnected ? "打开" : "需连接",
+                            isEnabled: isConnected
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(!isConnected)
                 }
             }
         }

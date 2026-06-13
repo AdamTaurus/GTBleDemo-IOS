@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-This is a minimal iOS demo for third-party developers. It shows how to integrate `GD BLE SDK` through a local `GDBleSDK.xcframework`, then scan BLE devices, connect to a discovered device, request device information, send remote key events, and transfer teleprompter files.
+This is a minimal iOS demo for third-party developers. It shows how to integrate `GD BLE SDK` through a local `GDBleSDK.xcframework`, then scan BLE devices, connect to a discovered device, request device information, send remote key events, transfer teleprompter files, and preview/download images through the glasses Wi-Fi service.
 
 The demo is built with SwiftUI. The main screen handles device connection and device info. Other protocol features are split into separate screens so customers can copy only what they need.
 
@@ -20,6 +20,9 @@ GDBleDemo-iOS/
 │   ├── RemoteKeyViewModel.swift
 │   ├── FileTransferView.swift    # Teleprompter file transfer screen
 │   ├── FileTransferViewModel.swift
+│   ├── WifiImageView.swift       # Wi-Fi image preview and download screen
+│   ├── WifiImageViewModel.swift
+│   ├── RemoteImageView.swift     # iOS 14 compatible remote image loader
 │   ├── DemoComponents.swift      # Shared SwiftUI demo components
 │   └── Assets.xcassets
 ├── GDBleDemo-iOS.xcodeproj
@@ -66,6 +69,19 @@ The host app must add a Bluetooth usage description to its own `Info.plist`. Thi
 
 The SDK does not show business dialogs or wrap permission UI. iOS displays the Bluetooth authorization prompt when CoreBluetooth is used.
 
+The Wi-Fi image screen accesses the glasses-side LAN HTTP service, so the demo also configures:
+
+```xml
+<key>NSLocalNetworkUsageDescription</key>
+<string>Used to access the glasses Wi-Fi image service and load thumbnails/full images.</string>
+
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
+</dict>
+```
+
 ## Implemented Features
 
 - SDK initialization and listener registration: `GDBleClient.shared.addListener(...)`
@@ -80,6 +96,9 @@ The SDK does not show business dialogs or wrap permission UI. iOS displays the B
 - Teleprompter file list query: `GDBleClient.shared.viewFile(pkg:)`
 - Teleprompter file download: `GDBleClient.shared.downloadFile(pkg:fileId:)`
 - Teleprompter txt file upload: `GDBleClient.shared.sendFile(fileURL:pkg:)`
+- Glasses Wi-Fi image service: `GDBleClient.shared.startWifiService()` / `stopWifiService()`
+- Image list query: `GDBleClient.shared.viewMedia(type:page:pageSize:)`
+- Image thumbnails, full image preview, and full image download into the app sandbox
 - Raw protocol JSON logs
 - SDK error callback logs
 
@@ -165,6 +184,20 @@ GDBleClient.shared.downloadFile(pkg: pkg, fileId: file.id)
 GDBleClient.shared.sendFile(fileURL: fileURL, pkg: pkg)
 ```
 
+Wi-Fi image preview and download:
+
+```swift
+GDBleClient.shared.startWifiService()
+
+// After receiving Action.WIFI_SERVICE_START, parse NetConfig:
+let baseUrl = "http://\(netConfig.ip):\(netConfig.port)"
+
+GDBleClient.shared.viewMedia(type: "image", page: 1, pageSize: 100)
+
+let thumbUrl = "\(baseUrl)/thumb/image/\(file.id)"
+let rawUrl = "\(baseUrl)/raw/image/\(file.id)"
+```
+
 Remove the listener when the page is destroyed:
 
 ```swift
@@ -186,3 +219,13 @@ The SDK keeps listeners weakly. The host app must retain the listener instance b
 - Tap Query File List to call `viewFile(pkg:)`; read `message.data?.fileList` when `Action.VIEW_FILE` is received.
 - Tap Download on a file row to call `downloadFile(pkg:fileId:)`; the completed local path is returned through `onFileReceived(absolutePath:)`.
 - Tap Upload Test File to create a random UTF-8 txt file named `测试 + timestamp` in the app cache, then call `sendFile(fileURL:pkg:)`.
+
+### Wi-Fi Images
+
+`WifiImageView` demonstrates the glasses-side Wi-Fi image service:
+
+- Tap Start Wi-Fi Service to call `startWifiService()`; parse `NetConfig` after `Action.WIFI_SERVICE_START` is received.
+- The demo polls `/health`, then calls `viewMedia(type: "image", page: 1, pageSize: 100)` when the service is reachable.
+- The list loads thumbnails from `/thumb/image/{id}`; tapping an item loads the full image from `/raw/image/{id}`.
+- Tap Download Full Image to save the image into the app sandbox at `Documents/GDImages/`. It does not write to Photos, so no Photos permission is required.
+- Leaving the page or tapping Stop Wi-Fi Service calls `stopWifiService()` to avoid leaving the glasses service running.
