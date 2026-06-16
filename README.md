@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接、设备信息读取、方向键控制、提词器文件传输和 Wi-Fi 图片预览下载。
+这是一个面向第三方客户的最小 iOS Demo，用于演示如何通过本地 `GDBleSDK.xcframework` 接入 GD BLE SDK，并完成 BLE 设备扫描、连接、设备信息读取、方向键控制、应用文件传输和 Wi-Fi 图片预览下载。
 
 Demo 使用 SwiftUI 实现。首页负责设备连接和设备信息展示，其它协议能力按独立页面拆分，便于客户按需复制。
 
@@ -18,7 +18,7 @@ GDBleDemo-iOS/
 │   ├── BleDemoViewModel.swift    # SDK listener、状态和基础调用流程
 │   ├── RemoteKeyView.swift       # 方向键控制页面
 │   ├── RemoteKeyViewModel.swift
-│   ├── FileTransferView.swift    # 提词器文件传输页面
+│   ├── FileTransferView.swift    # 应用文件传输页面，Demo 以提词器包名演示
 │   ├── FileTransferViewModel.swift
 │   ├── WifiImageView.swift       # Wi-Fi 图片预览和下载页面
 │   ├── WifiImageViewModel.swift
@@ -93,9 +93,9 @@ Wi-Fi 图片页面会访问眼镜端局域网 HTTP 服务，因此 Demo 还配�
 - 扫描设备列表展示
 - 设备信息请求：`GDBleClient.shared.getDeviceInfo()`
 - 方向键发送：`GDBleClient.shared.sendKey(...)`
-- 提词器文件列表查询：`GDBleClient.shared.viewFile(pkg:)`
-- 提词器文件下载：`GDBleClient.shared.downloadFile(pkg:fileId:)`
-- 提词器 txt 文件上传：`GDBleClient.shared.sendFile(fileURL:pkg:)`
+- 应用文件列表查询：`GDBleClient.shared.viewFile(pkg:)`
+- 应用文件下载：`GDBleClient.shared.downloadFile(pkg:fileId:)`
+- 应用文件上传：`GDBleClient.shared.sendFile(fileURL:pkg:)`
 - 眼镜端 Wi-Fi 图片服务：`GDBleClient.shared.startWifiService()` / `stopWifiService()`
 - 图片列表查询：`GDBleClient.shared.viewMedia(type:page:pageSize:)`
 - 图片缩略图、原图预览和原图下载到 App 沙盒
@@ -174,7 +174,7 @@ GDBleClient.shared.sendKey(.center)
 GDBleClient.shared.sendKey(.back)
 ```
 
-提词器文件传输使用固定测试包名：
+应用文件传输以提词器包名为例：
 
 ```swift
 let pkg = "com.goolton.teleprompter"
@@ -183,6 +183,10 @@ GDBleClient.shared.viewFile(pkg: pkg)
 GDBleClient.shared.downloadFile(pkg: pkg, fileId: file.id)
 GDBleClient.shared.sendFile(fileURL: fileURL, pkg: pkg)
 ```
+
+如果要给其它眼镜端应用发送文件，将 `pkg` 改为对应应用的真实包名即可。眼镜端会按 `pkg` 管理文件列表、下载和上传。
+
+自研眼镜端应用建议接入 [GTBle](https://github.com/AdamTaurus/GTBle) 的 `content_sdk`，这样应用可以通过 Content Center 感知手机端下发的协议消息和文件变化。若暂不接入，应用也可以在启动、恢复或手动刷新时直接读取公共文档目录，路径形态为 `/Documents/<appFolder>`：内置应用可能有固定目录名，例如 `com.goolton.teleprompter` 对应 `Teleprompter`；其它包名默认取包名最后一段并生成目录名，例如 `com.goolton.launcher` 对应 `Launcher`。这种直接读目录的方式只能拿到当前文件快照，文件新增或更新时不会主动通知业务 App。
 
 Wi-Fi 图片预览和下载：
 
@@ -212,13 +216,15 @@ Listener 会被 SDK 弱引用保存，宿主 App 需要自己持有 listener 实
 
 `RemoteKeyView` 演示连接后发送按键事件。页面提供 `up/down/left/right/center/back/home/refresh` 全量按钮；未连接时按钮禁用。客户项目只需要在自己的按钮事件中调用 `GDBleClient.shared.sendKey(...)`。
 
-### 提词器文件传输
+### 应用文件传输
 
-`FileTransferView` 演示提词器文件能力，测试包名为 `com.goolton.teleprompter`：
+`FileTransferView` 演示按应用包名管理文件的能力，Demo 使用提词器测试包名 `com.goolton.teleprompter`：
 
 - 点击“查询文件列表”调用 `viewFile(pkg:)`，收到 `Action.VIEW_FILE` 后读取 `message.data?.fileList`。
 - 文件列表项点击“下载”调用 `downloadFile(pkg:fileId:)`，下载完成路径通过 `onFileReceived(absolutePath:)` 返回。
 - 点击“上传测试文件”会在 App cache 下随机创建 `测试 + 时间戳` 的 UTF-8 txt 文件，并调用 `sendFile(fileURL:pkg:)` 上传。
+- 如果目标是其它眼镜端应用，调用时替换为对应应用包名即可。
+- 自研眼镜端应用推荐接入 [GTBle](https://github.com/AdamTaurus/GTBle) `content_sdk`；不接入时也可以读取 `/Documents/<appFolder>`，但无法收到文件更新通知。
 
 ### Wi-Fi 图片
 

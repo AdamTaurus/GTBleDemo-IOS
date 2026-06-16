@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-This is a minimal iOS demo for third-party developers. It shows how to integrate `GD BLE SDK` through a local `GDBleSDK.xcframework`, then scan BLE devices, connect to a discovered device, request device information, send remote key events, transfer teleprompter files, and preview/download images through the glasses Wi-Fi service.
+This is a minimal iOS demo for third-party developers. It shows how to integrate `GD BLE SDK` through a local `GDBleSDK.xcframework`, then scan BLE devices, connect to a discovered device, request device information, send remote key events, transfer app files, and preview/download images through the glasses Wi-Fi service.
 
 The demo is built with SwiftUI. The main screen handles device connection and device info. Other protocol features are split into separate screens so customers can copy only what they need.
 
@@ -18,7 +18,7 @@ GDBleDemo-iOS/
 │   ├── BleDemoViewModel.swift    # SDK listener, state, and basic API flow
 │   ├── RemoteKeyView.swift       # Remote key control screen
 │   ├── RemoteKeyViewModel.swift
-│   ├── FileTransferView.swift    # Teleprompter file transfer screen
+│   ├── FileTransferView.swift    # App file transfer screen, using teleprompter as the demo package
 │   ├── FileTransferViewModel.swift
 │   ├── WifiImageView.swift       # Wi-Fi image preview and download screen
 │   ├── WifiImageViewModel.swift
@@ -93,9 +93,9 @@ The Wi-Fi image screen accesses the glasses-side LAN HTTP service, so the demo a
 - Discovered device list
 - Device info request: `GDBleClient.shared.getDeviceInfo()`
 - Remote key events: `GDBleClient.shared.sendKey(...)`
-- Teleprompter file list query: `GDBleClient.shared.viewFile(pkg:)`
-- Teleprompter file download: `GDBleClient.shared.downloadFile(pkg:fileId:)`
-- Teleprompter txt file upload: `GDBleClient.shared.sendFile(fileURL:pkg:)`
+- App file list query: `GDBleClient.shared.viewFile(pkg:)`
+- App file download: `GDBleClient.shared.downloadFile(pkg:fileId:)`
+- App file upload: `GDBleClient.shared.sendFile(fileURL:pkg:)`
 - Glasses Wi-Fi image service: `GDBleClient.shared.startWifiService()` / `stopWifiService()`
 - Image list query: `GDBleClient.shared.viewMedia(type:page:pageSize:)`
 - Image thumbnails, full image preview, and full image download into the app sandbox
@@ -174,7 +174,7 @@ GDBleClient.shared.sendKey(.center)
 GDBleClient.shared.sendKey(.back)
 ```
 
-Teleprompter file transfer uses a fixed test package name:
+App file transfer uses the teleprompter package as an example:
 
 ```swift
 let pkg = "com.goolton.teleprompter"
@@ -183,6 +183,10 @@ GDBleClient.shared.viewFile(pkg: pkg)
 GDBleClient.shared.downloadFile(pkg: pkg, fileId: file.id)
 GDBleClient.shared.sendFile(fileURL: fileURL, pkg: pkg)
 ```
+
+To send files to another glasses app, replace `pkg` with the target app's real package name. The glasses side uses `pkg` to manage file list, download, and upload operations.
+
+For a self-developed glasses app, integrating the [GTBle](https://github.com/AdamTaurus/GTBle) `content_sdk` is recommended. It lets the app receive protocol messages and file-change signals through Content Center. Without `content_sdk`, the app can still read the public document directory directly when it starts, resumes, or refreshes manually. The directory is `/Documents/<appFolder>`: built-in apps may use mapped folder names, for example `com.goolton.teleprompter` maps to `Teleprompter`; other package names use the final package segment to generate the folder name by default, for example `com.goolton.launcher` maps to `Launcher`. Direct directory reading only gives the current file snapshot, so the business app will not be notified when files are added or updated.
 
 Wi-Fi image preview and download:
 
@@ -212,13 +216,15 @@ The SDK keeps listeners weakly. The host app must retain the listener instance b
 
 `RemoteKeyView` demonstrates sending key events after the glasses are connected. It includes buttons for `up/down/left/right/center/back/home/refresh`; buttons are disabled when the device is disconnected. In a customer app, call `GDBleClient.shared.sendKey(...)` from the app's own button handler.
 
-### Teleprompter File Transfer
+### App File Transfer
 
-`FileTransferView` demonstrates teleprompter file APIs with the test package `com.goolton.teleprompter`:
+`FileTransferView` demonstrates package-based app file APIs. The demo uses the teleprompter test package `com.goolton.teleprompter`:
 
 - Tap Query File List to call `viewFile(pkg:)`; read `message.data?.fileList` when `Action.VIEW_FILE` is received.
 - Tap Download on a file row to call `downloadFile(pkg:fileId:)`; the completed local path is returned through `onFileReceived(absolutePath:)`.
 - Tap Upload Test File to create a random UTF-8 txt file named `测试 + timestamp` in the app cache, then call `sendFile(fileURL:pkg:)`.
+- To target another glasses app, use that app's real package name in the SDK calls.
+- For self-developed glasses apps, integrating the [GTBle](https://github.com/AdamTaurus/GTBle) `content_sdk` is recommended; without it, the app may read `/Documents/<appFolder>` directly but cannot receive file-change notifications.
 
 ### Wi-Fi Images
 
